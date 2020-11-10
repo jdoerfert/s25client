@@ -17,6 +17,7 @@
 
 #include "AIInfo.h"
 #include "s25util/Serializer.h"
+#include "mygettext/mygettext.h"
 
 namespace AI {
 Info::Info(Serializer& ser)
@@ -28,4 +29,27 @@ void Info::serialize(Serializer& ser) const
     ser.PushUnsignedChar(static_cast<unsigned char>(type));
     ser.PushUnsignedChar(static_cast<unsigned char>(level));
 }
+
+std::string Info::ToString(unsigned playerId) const
+{
+    std::string s;
+    switch(type)
+    {
+        case DUMMY: s += _("Dummy"); break;
+        case DEFAULT: s += _("Computer"); break;
+    }
+    s += " " + std::to_string(playerId) + _(" (AI)");
+
+    if(type == DUMMY)
+        return s;
+
+    switch(level)
+    {
+        case AI::EASY: s += _(" (easy)"); break;
+        case AI::MEDIUM: s += _(" (medium)"); break;
+        case AI::HARD: s += _(" (hard)"); break;
+    }
+    return s;
+}
+
 } // namespace AI

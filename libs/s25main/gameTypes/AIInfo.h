@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <string>
+
 class Serializer;
 
 namespace AI {
@@ -24,13 +26,13 @@ enum Level
 {
     EASY = 0,
     MEDIUM,
-    HARD
+    HARD,
 };
 
 enum Type
 {
     DUMMY = 0,
-    DEFAULT
+    DEFAULT,
 };
 
 struct Info
@@ -40,5 +42,6 @@ struct Info
     Info(Type t = DUMMY, Level l = EASY) : type(t), level(l) {}
     Info(Serializer& ser);
     void serialize(Serializer& ser) const;
+    std::string ToString(unsigned playerId) const;
 };
 } // namespace AI
