@@ -134,6 +134,12 @@ public:
     /// Gibt Träger-Produktivität in % zurück
     unsigned GetProductivity() const { return productivity; }
 
+    /// Return the first GF in the "current productivity epoch", that is the time the productivity was last computed.
+    unsigned GetFirstGFInProductivityEpoch() const;
+
+    /// Return the number of GFs worked since the first GF in this productivity epoch.
+    unsigned GetWorkedGFInProducitivityEpoch() const { return worked_gf; }
+
     void Draw(DrawPoint drawPt) override;
 
     /// Wird aufgerufen, wenn der Weg des Trägers abgerissen wurde
