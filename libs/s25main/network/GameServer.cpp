@@ -21,17 +21,20 @@
 #include "GameMessage_GameCommand.h"
 #include "GameServerPlayer.h"
 #include "GlobalGameSettings.h"
+#include "JoinPlayerInfo.h"
 #include "RTTR_Version.h"
 #include "RttrConfig.h"
 #include "Savegame.h"
 #include "Settings.h"
 #include "commonDefines.h"
 #include "files.h"
+#include "helpers/MultiArray.h"
 #include "helpers/containerUtils.h"
 #include "network/CreateServerInfo.h"
 #include "network/GameMessages.h"
 #include "ogl/glArchivItem_Map.h"
 #include "gameTypes/LanGameInfo.h"
+#include "gameTypes/TeamTypes.h"
 #include "gameData/GameConsts.h"
 #include "gameData/LanDiscoveryCfg.h"
 #include "liblobby/LobbyClient.h"
@@ -46,6 +49,7 @@
 #include <cmath>
 #include <helpers/chronoIO.h>
 #include <iomanip>
+#include <iterator>
 #include <mygettext/mygettext.h>
 
 inline std::ostream& operator<<(std::ostream& os, const AsyncChecksum& checksum)
@@ -430,12 +434,111 @@ void GameServer::Stop()
     LOG.write("server state changed to stop\n");
 }
 
+// Check if there are players that have not been assigned a team but only a
+// range. Those players are assigned a team now while we try to balanace the
+// number of players per team. Returns true iff players have been assigned.
+static bool adjustSmartTeams(std::vector<JoinPlayerInfo>& playerInfos)
+{
+    std::set<unsigned> nPotentialPlayers[4];
+    unsigned nPlayers[4] = {0, 0, 0, 0};
+    unsigned unassignedPlayers = 0;
+
+    // First collect fixed players and potential ones.
+    for(unsigned player = 0; player < playerInfos.size(); ++player)
+    {
+        JoinPlayerInfo& playerInfo = playerInfos[player];
+        switch(playerInfo.team)
+        {
+            case TM_TEAM1: ++nPlayers[0]; break;
+            case TM_TEAM2: ++nPlayers[1]; break;
+            case TM_TEAM3: ++nPlayers[2]; break;
+            case TM_TEAM4: ++nPlayers[3]; break;
+            case TM_TEAM_1_TO_2:
+                ++unassignedPlayers;
+                nPotentialPlayers[0].insert(player);
+                nPotentialPlayers[1].insert(player);
+                break;
+            case TM_TEAM_1_TO_3:
+                ++unassignedPlayers;
+                nPotentialPlayers[0].insert(player);
+                nPotentialPlayers[1].insert(player);
+                nPotentialPlayers[2].insert(player);
+                break;
+            case TM_TEAM_1_TO_4:
+                ++unassignedPlayers;
+                nPotentialPlayers[0].insert(player);
+                nPotentialPlayers[1].insert(player);
+                nPotentialPlayers[2].insert(player);
+                nPotentialPlayers[3].insert(player);
+                break;
+            case TM_NOTEAM: break;
+            default: RTTR_Assert_Msg(false, "Unexpected team!");
+        }
+    }
+    // Check for unassigned players first.
+    if(unassignedPlayers == 0)
+        return false;
+
+    RTTR_Assert_Msg(!nPotentialPlayers[0].empty() || !nPotentialPlayers[1].empty() || !nPotentialPlayers[2].empty()
+                      || !nPotentialPlayers[3].empty(),
+                    "Expected at least one team!");
+
+    while(unassignedPlayers)
+    {
+        // Set of potential teams for the next player.
+        std::vector<int> teamsForNextPlayer;
+
+        // Determine the minimal team size for teams that can take an unassigned player.
+        unsigned minNextTeamSize = -1;
+        for(int team = 0; team < 4; ++team)
+        {
+            // Check if we can add a player to this team at all.
+            if(!nPotentialPlayers[team].empty())
+              minNextTeamSize = std::min(minNextTeamSize, nPlayers[team]);
+        }
+        RTTR_Assert_Msg(minNextTeamSize != -1, "Expected to find team for an unassigned player!");
+
+        for(int team = 0; team < 4; ++team)
+        {
+            // Check if we can add a player to this team at all.
+            if(nPotentialPlayers[team].empty())
+                continue;
+            // Check if this is a team with the minimal number of players amongst teams that can have unassigned ones.
+            if(nPlayers[team] > minNextTeamSize)
+                continue;
+            teamsForNextPlayer.push_back(team);
+        }
+
+        int nextTeam = teamsForNextPlayer[rand() % teamsForNextPlayer.size()];
+        RTTR_Assert_Msg(!nPotentialPlayers[nextTeam].empty(), "Expected next team to have potential players!");
+
+        // Pick a random player that can go into this team.
+        auto it = nPotentialPlayers[nextTeam].begin();
+        std::advance(it, rand() % nPotentialPlayers[nextTeam].size());
+        int nextPlayer = *it;
+
+        // The player is now assigned and the team size increased.
+        for(int i = 0; i < 4; ++i)
+            nPotentialPlayers[i].erase(nextPlayer);
+        ++nPlayers[nextTeam];
+
+        playerInfos[nextPlayer].team = Team(TM_TEAM1 + nextTeam);
+        --unassignedPlayers;
+    }
+
+    return true;
+}
+
 /**
  *  startet das Spiel.
  */
 bool GameServer::StartGame()
 {
     lanAnnouncer.Stop();
+
+    // Finalize the team selection for unassigned players.
+    if(adjustSmartTeams(playerInfos))
+        SendToAll(GameMessage_Player_List(playerInfos));
 
     // Bei Savegames wird der Startwert von den Clients aus der Datei gelesen!
     unsigned random_init;
