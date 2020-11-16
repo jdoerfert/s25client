@@ -18,6 +18,7 @@
 #include "nofCarrier.h"
 #include "EventManager.h"
 #include "GamePlayer.h"
+#include "GameEvent.h"
 #include "Loader.h"
 #include "RoadSegment.h"
 #include "SerializedGameData.h"
@@ -570,6 +571,13 @@ void nofCarrier::GoalReached()
     }
 
     LOG.write("nofCarrier::GoalReached: ERROR: Road of carrier (id: %u) not found!\n") % GetObjId();
+}
+
+unsigned nofCarrier::GetFirstGFInProductivityEpoch() const
+{
+    if(productivity_ev)
+        return productivity_ev->startGF;
+    return -1;
 }
 
 void nofCarrier::AbrogateWorkplace()

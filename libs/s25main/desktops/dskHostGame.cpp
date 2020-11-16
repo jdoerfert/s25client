@@ -843,7 +843,7 @@ void dskHostGame::UpdateGGS()
 
 void dskHostGame::ChangeTeam(const unsigned i, const unsigned char nr)
 {
-    const std::array<std::string, 9> teams = {"-", "?", "1", "2", "3", "4", "?", "?", "?"};
+    const std::array<std::string, 12> teams = {"-", "?", "1", "2", "3", "4", "1-2", "1-3", "1-4", "?", "?", "?"};
 
     GetCtrl<ctrlGroup>(ID_PLAYER_GROUP_START + i)->GetCtrl<ctrlBaseText>(5)->SetText(teams[nr]);
 }

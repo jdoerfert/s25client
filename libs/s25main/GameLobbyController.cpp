@@ -69,7 +69,17 @@ void GameLobbyController::TogglePlayerState(unsigned playerIdx)
             switch(aiInfo.type)
             {
                 case AI::DEFAULT:
-                default:
+                    switch(aiInfo.level)
+                    {
+                        case AI::EASY: aiInfo.level = AI::MEDIUM; break;
+                        case AI::MEDIUM: aiInfo.level = AI::HARD; break;
+                        case AI::HARD:
+                            aiInfo.type = AI::EXPERIMENTAL;
+                            aiInfo.level = AI::EASY;
+                            break;
+                    }
+                    break;
+                case AI::EXPERIMENTAL:
                     switch(aiInfo.level)
                     {
                         case AI::EASY: aiInfo.level = AI::MEDIUM; break;

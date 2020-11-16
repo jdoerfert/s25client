@@ -64,6 +64,7 @@ public:
     /// Liefert Rang des Soldaten
     unsigned char GetRank() const;
     unsigned char GetHitpoints() const;
+    nobBaseMilitary *GetHome() const { return building; }
     bool HasNoHome() const { return building == nullptr; }
 };
 

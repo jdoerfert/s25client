@@ -17,9 +17,7 @@
 
 #include "JoinPlayerInfo.h"
 #include "RTTR_Assert.h"
-#include "mygettext/mygettext.h"
 #include "s25util/Serializer.h"
-#include <boost/format.hpp>
 
 JoinPlayerInfo::JoinPlayerInfo() = default;
 
@@ -54,16 +52,5 @@ void JoinPlayerInfo::FixSwappedSaveSlot(JoinPlayerInfo& other)
 void JoinPlayerInfo::SetAIName(unsigned playerId)
 {
     RTTR_Assert(ps == PS_AI);
-    name = (boost::format((aiInfo.type == AI::DUMMY) ? _("Dummy %u") : _("Computer %u")) % playerId).str();
-    name += _(" (AI)");
-
-    if(aiInfo.type == AI::DEFAULT)
-    {
-        switch(aiInfo.level)
-        {
-            case AI::EASY: name += _(" (easy)"); break;
-            case AI::MEDIUM: name += _(" (medium)"); break;
-            case AI::HARD: name += _(" (hard)"); break;
-        }
-    }
+    name = aiInfo.ToString(playerId);
 }

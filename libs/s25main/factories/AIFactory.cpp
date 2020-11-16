@@ -18,6 +18,7 @@
 #include "AIFactory.h"
 #include "ai/DummyAI.h"
 #include "ai/aijh/AIPlayerJH.h"
+#include "ai/aijd/AIPlayerJD.h"
 #include "gameTypes/AIInfo.h"
 
 std::unique_ptr<AIPlayer> AIFactory::Create(const AI::Info& aiInfo, unsigned playerId, const GameWorldBase& world)
@@ -25,6 +26,7 @@ std::unique_ptr<AIPlayer> AIFactory::Create(const AI::Info& aiInfo, unsigned pla
     switch(aiInfo.type)
     {
         case AI::DUMMY: return std::make_unique<DummyAI>(playerId, world, aiInfo.level); break;
+        case AI::EXPERIMENTAL: return AI::jd::getPlayer(playerId, world, aiInfo.level); break;
         case AI::DEFAULT:
         default: return std::make_unique<AIJH::AIPlayerJH>(playerId, world, aiInfo.level); break;
     }

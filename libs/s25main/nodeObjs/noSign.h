@@ -40,6 +40,10 @@ public:
     /// An x,y zeichnen.
     void Draw(DrawPoint drawPt) override;
 
+    /// Return the amount of resources found, as drawn on the sign.
+    uint8_t GetSignAmount() const { return resource.getAmount(); }
+
+    /// Return the type of resources found, as drawn on the sign.
     Resource::Type GetSignType() const { return resource.getType(); }
 
 private:

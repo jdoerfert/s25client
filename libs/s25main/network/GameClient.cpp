@@ -1749,10 +1749,14 @@ void GameClient::ToggleHumanAIPlayer()
     RTTR_Assert(!IsReplayModeOn());
     auto it = helpers::find_if(game->aiPlayers_,
                                [id = this->GetPlayerId()](const auto& player) { return player.GetPlayerId() == id; });
-    if(it != game->aiPlayers_.end())
+    if(it != game->aiPlayers_.end()) {
         game->aiPlayers_.erase(it);
-    else
-        game->AddAIPlayer(CreateAIPlayer(GetPlayerId(), AI::Info(AI::DEFAULT, AI::EASY)));
+        mainPlayer.sendMsg(GameMessage_Chat(0xFF, CD_SYSTEM, "Remove AI from human"));
+    } else
+    {
+        game->AddAIPlayer(CreateAIPlayer(GetPlayerId(), AI::Info(AI::EXPERIMENTAL, AI::HARD)));
+        mainPlayer.sendMsg(GameMessage_Chat(0xFF, CD_SYSTEM, "Add AI to human"));
+    }
 }
 
 void GameClient::RequestSwapToPlayer(const unsigned char newId)
